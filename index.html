@@ -120,7 +120,8 @@ footer { margin-top: 32px; font-size: 13px; color: var(--muted); }
       <div class="field"><label for="mail">E-mail (facultatif)</label><input type="email" id="mail" autocomplete="email" placeholder="Pour vous prévenir en cas d'imprévu" maxlength="120"></div>
       <div class="field"><label for="kind">Vous êtes</label>
         <select id="kind"><option value="int">Interne à l'EREA</option><option value="ext">Externe à l'EREA</option></select></div>
-      <p>Un repas par personne et par jour. Les réservations ferment la veille du service à 12h. Passé ce délai, adressez-vous au professeur de service. Vos données servent uniquement à organiser le service du restaurant.</p>
+      <div class="field"><label for="qty">Nombre de repas (1 à 10)</label><input type="number" id="qty" min="1" max="10" step="1" value="1" inputmode="numeric"></div>
+      <p>Une réservation par nom et par jour, pour 1 à 10 repas. Les réservations ferment la veille du service à 12h. Passé ce délai, adressez-vous au professeur de service. Vos données servent uniquement à organiser le service du restaurant.</p>
     </div>
     <div class="grid" id="cards"></div>
   </section>
@@ -165,6 +166,7 @@ footer { margin-top: 32px; font-size: 13px; color: var(--muted); }
           <div class="row">
             <div class="field"><label for="wname">Ajouter un convive</label><input type="text" id="wname" placeholder="Nom du convive" maxlength="80"></div>
             <div class="field"><label for="wkind">Type</label><select id="wkind"><option value="int">Interne</option><option value="ext">Externe</option></select></div>
+            <div class="field"><label for="wqty">Nombre de repas</label><input type="number" id="wqty" min="1" max="20" step="1" value="1" inputmode="numeric"></div>
           </div>
           <button class="btn alt" id="btnWalk" type="button">Ajouter à ce service</button>
         </div>
@@ -205,18 +207,14 @@ footer { margin-top: 32px; font-size: 13px; color: var(--muted); }
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
+<script src="config.js"></script>
 <script>
-/* ================= CONFIGURATION : à modifier ================= */
-var SUPABASE_URL = 'https://uczjwbhftywfdqawmpqu.supabase.co';
-var SUPABASE_ANON_KEY = 'sb_publishable_36iUFp3jkmBXRD6qdhM-pQ__e7SNneq';
-// Professeur de service, du lundi (1) au vendredi (5)
-var PROFS = { 1: 'Nadine', 2: 'Melika', 3: 'Valerie', 4: 'José', 5: 'Nadine' };
-/* ============================================================== */
-
 (function () {
+  var CFG = window.NELSON_CONFIG || {};
+  var PROFS = CFG.profs || { 1: 'Nadine', 2: 'Melika', 3: 'Valerie', 4: 'José', 5: 'Nadine' };
   var $ = function (id) { return document.getElementById(id); };
   var S = { sb: null, user: null, staff: null, tab: 'reserver', days: {}, counts: {}, res: [], tokens: {}, sdate: null, busy: false, dirty: false, sig: '' };
-  var configured = SUPABASE_URL.indexOf('VOTRE') === -1 && SUPABASE_ANON_KEY.indexOf('VOTRE') === -1;
+  var configured = !!CFG.url && !!CFG.key && CFG.url.indexOf('VOTRE') === -1 && CFG.key.indexOf('VOTRE') === -1;
 
   function h(tag, attrs) {
     var e = document.createElement(tag);
@@ -271,9 +269,11 @@ var PROFS = { 1: 'Nadine', 2: 'Melika', 3: 'Valerie', 4: 'José', 5: 'Nadine' };
   function errMsg(e) {
     var m = (e && e.message) || '';
     if (m.indexOf('delai_depasse') > -1) return 'Les réservations sont closes pour ce jour (limite : la veille à 12h).';
+    if (m.indexOf('places_insuffisantes') > -1) return 'Il ne reste pas assez de places pour ce nombre de repas.';
+    if (m.indexOf('quantite_invalide') > -1) return 'Le nombre de repas doit être compris entre 1 et 10.';
     if (m.indexOf('complet') > -1) return 'Ce service est complet.';
     if (m.indexOf('ferme') > -1) return 'Le restaurant est fermé ce jour.';
-    if (m.indexOf('deja_reserve') > -1 || m.indexOf('duplicate') > -1 || m.indexOf('unique') > -1) return 'Une réservation existe déjà à ce nom pour ce jour.';
+    if (m.indexOf('deja_reserve') > -1 || m.indexOf('duplicate') > -1 || m.indexOf('unique') > -1) return 'Une réservation existe déjà à ce nom pour ce jour. Pour changer le nombre de repas, annulez-la puis réservez de nouveau.';
     if (m.indexOf('nom_invalide') > -1) return 'Indiquez votre nom (2 caractères au moins).';
     if (m.indexOf('row-level security') > -1 || m.indexOf('permission') > -1) return 'Action refusée : ce jour n\'est pas dans vos jours de service.';
     return 'Une erreur est survenue. Réessayez dans un instant.';
@@ -287,6 +287,9 @@ var PROFS = { 1: 'Nadine', 2: 'Melika', 3: 'Valerie', 4: 'José', 5: 'Nadine' };
     Object.keys(S.tokens).forEach(function (d) { if (d >= today) keep[d] = S.tokens[d]; });
     S.tokens = keep; saveTokens();
   }
+  var tokOf = function (v) { return v && typeof v === 'object' ? v.t : v; };
+  var qtyOf = function (v) { return v && typeof v === 'object' ? v.q || 1 : 1; };
+  var wantQty = function () { var q = parseInt($('qty').value, 10); return q >= 1 && q <= 10 ? q : 1; };
   function saveTokens() { try { localStorage.setItem('nelson_tokens', JSON.stringify(S.tokens)); } catch (e) { /* stockage indisponible */ } }
 
   /* ---------- données publiques ---------- */
@@ -309,16 +312,18 @@ var PROFS = { 1: 'Nadine', 2: 'Melika', 3: 'Valerie', 4: 'José', 5: 'Nadine' };
     var name = ($('lbl').value || '').trim();
     if (!name) { toast('Indiquez votre nom pour réserver.', true); $('lbl').focus(); return; }
     S.busy = true; renderCards();
-    var r = await S.sb.rpc('book_meal', { p_date: date, p_name: name, p_email: ($('mail').value || '').trim(), p_kind: $('kind').value });
+    var qty = parseInt($('qty').value, 10);
+    if (!(qty >= 1 && qty <= 10)) { S.busy = false; renderCards(); toast('Le nombre de repas doit être compris entre 1 et 10.', true); $('qty').focus(); return; }
+    var r = await S.sb.rpc('book_meal', { p_date: date, p_name: name, p_email: ($('mail').value || '').trim(), p_kind: $('kind').value, p_qty: qty });
     S.busy = false;
     if (r.error) toast(errMsg(r.error), true);
-    else { S.tokens[date] = r.data; saveTokens(); toast('Repas réservé pour le ' + longDate(date).toLowerCase() + '.'); }
+    else { S.tokens[date] = { t: r.data, q: qty }; saveTokens(); toast((qty > 1 ? qty + ' repas réservés' : 'Repas réservé') + ' pour le ' + longDate(date).toLowerCase() + '.'); }
     await loadPublic();
   }
   async function cancelMine(date) {
     if (S.busy) return;
     S.busy = true; renderCards();
-    var r = await S.sb.rpc('cancel_meal', { p_token: S.tokens[date] });
+    var r = await S.sb.rpc('cancel_meal', { p_token: tokOf(S.tokens[date]) });
     S.busy = false;
     if (r.error) toast(errMsg(r.error), true);
     else { delete S.tokens[date]; saveTokens(); toast(r.data ? 'Réservation annulée.' : 'Cette réservation n\'existe plus.'); }
@@ -382,11 +387,13 @@ var PROFS = { 1: 'Nadine', 2: 'Melika', 3: 'Valerie', 4: 'José', 5: 'Nadine' };
     if (name.length < 2) { toast('Indiquez le nom du convive.', true); $('wname').focus(); return; }
     if (S.busy) return;
     S.busy = true;
-    var r = await S.sb.from('reservations').insert({ date: S.sdate, name: name, kind: $('wkind').value, walk: true });
+    var wq = parseInt($('wqty').value, 10);
+    if (!(wq >= 1 && wq <= 20)) { S.busy = false; toast('Le nombre de repas doit être compris entre 1 et 20.', true); return; }
+    var r = await S.sb.from('reservations').insert({ date: S.sdate, name: name, kind: $('wkind').value, qty: wq, walk: true });
     S.busy = false;
     if (r.error) { toast(errMsg(r.error), true); return; }
-    $('wname').value = '';
-    toast(S.res.length + 1 > cap(S.sdate) ? 'Convive ajouté, la capacité est dépassée.' : 'Convive ajouté.');
+    $('wname').value = ''; $('wqty').value = '1';
+    toast(sumRes() + wq > cap(S.sdate) ? 'Convive ajouté, la capacité est dépassée.' : 'Convive ajouté.');
     await loadPublic(); loadRes();
   }
   async function signIn(ev) {
@@ -425,17 +432,18 @@ var PROFS = { 1: 'Nadine', 2: 'Melika', 3: 'Valerie', 4: 'José', 5: 'Nadine' };
   }
   function card(date) {
     var day = S.days[date] || {}, c = cap(date), n = count(date), left = Math.max(0, c - n);
-    var mine = !!S.tokens[date], open = canBook(date), closed = isClosed(date);
+    var mine = !!S.tokens[date], open = canBook(date), closed = isClosed(date), want = wantQty(), mq = qtyOf(S.tokens[date]);
     var pct = Math.min(100, Math.round(n / c * 100));
     var meterCls = 'meter' + (left === 0 ? ' full' : left <= 2 ? ' low' : '');
-    var tag = closed ? h('span', { class: 'tag plain' }, 'Pas de service') : mine ? h('span', { class: 'tag' }, 'Réservé') : left === 0 ? h('span', { class: 'tag bad' }, 'Complet') : left <= 2 ? h('span', { class: 'tag warn' }, left + (left > 1 ? ' places' : ' place')) : null;
+    var tag = closed ? h('span', { class: 'tag plain' }, 'Pas de service') : mine ? h('span', { class: 'tag' }, mq > 1 ? 'Réservé × ' + mq : 'Réservé') : left === 0 ? h('span', { class: 'tag bad' }, 'Complet') : left <= 2 ? h('span', { class: 'tag warn' }, left + (left > 1 ? ' places' : ' place')) : null;
     var action;
     if (closed) action = null;
     else if (mine && open) action = h('button', { class: 'btn alt', type: 'button', disabled: S.busy, onclick: function () { cancelMine(date); } }, 'Annuler ma réservation');
     else if (mine) action = h('button', { class: 'btn alt', type: 'button', disabled: true }, 'Réservation confirmée');
     else if (!open) action = h('button', { class: 'btn', type: 'button', disabled: true }, 'Réservations closes');
     else if (left === 0) action = h('button', { class: 'btn', type: 'button', disabled: true }, 'Complet');
-    else action = h('button', { class: 'btn', type: 'button', disabled: S.busy, onclick: function () { book(date); } }, 'Réserver un repas');
+    else if (want > left) action = h('button', { class: 'btn', type: 'button', disabled: true }, 'Il reste ' + left + (left > 1 ? ' places' : ' place'));
+    else action = h('button', { class: 'btn', type: 'button', disabled: S.busy, onclick: function () { book(date); } }, want > 1 ? 'Réserver ' + want + ' repas' : 'Réserver un repas');
     var dl = new Date(deadline(date));
     return h('article', { class: 'card' + (mine ? ' mine' : '') + (closed ? ' off' : '') },
       h('div', { class: 'card-top' }, h('h3', {}, longDate(date), h('small', {}, 'Service assuré par ' + profOf(date))), tag),
@@ -448,9 +456,10 @@ var PROFS = { 1: 'Nadine', 2: 'Melika', 3: 'Valerie', 4: 'José', 5: 'Nadine' };
     var box = $('cards'); box.textContent = '';
     DATES.forEach(function (d) { box.append(card(d)); });
   }
+  function sumRes() { return S.res.reduce(function (a, e) { return a + (e.qty || 1); }, 0); }
   function renderService() {
     if (!isStaff() || !S.sdate) return;
-    var date = S.sdate, day = S.days[date] || {}, c = cap(date), n = S.res.length;
+    var date = S.sdate, day = S.days[date] || {}, c = cap(date), n = sumRes();
     var dl = new Date(deadline(date));
     $('sprof').textContent = 'Service assuré par ' + profOf(date) + '. Réservations closes le ' + fWeek.format(dl) + ' ' + fDay.format(dl) + ' à 12h.';
     var sig = date + '|' + JSON.stringify(day);
@@ -466,12 +475,14 @@ var PROFS = { 1: 'Nadine', 2: 'Melika', 3: 'Valerie', 4: 'José', 5: 'Nadine' };
     $('sLeft').textContent = n > c ? (n - c) + ' au-delà de la capacité' : (c - n) + ' restant' + (c - n > 1 ? 's' : '');
     var ul = $('slist'); ul.textContent = '';
     if (!S.res.length) ul.append(h('li', {}, h('span', { class: 'empty' }, 'Aucune réservation pour ce service.')));
-    S.res.forEach(function (e, i) {
+    var run = 0;
+    S.res.forEach(function (e) {
+      run += (e.qty || 1);
       ul.append(h('li', {},
-        h('span', { class: 'nm' }, e.name),
+        h('span', { class: 'nm' }, e.name + ((e.qty || 1) > 1 ? ' × ' + e.qty : '')),
         h('span', { class: 'tag plain' }, kindLabel(e.kind)),
         e.walk ? h('span', { class: 'tag plain' }, 'Ajouté par le prof') : null,
-        i >= c ? h('span', { class: 'tag warn' }, 'Hors capacité') : null,
+        run > c ? h('span', { class: 'tag warn' }, 'Hors capacité') : null,
         h('button', { class: 'btn danger small', type: 'button', disabled: S.busy, onclick: function () { staffRemove(e.id); } }, 'Retirer')));
     });
   }
@@ -508,8 +519,8 @@ var PROFS = { 1: 'Nadine', 2: 'Melika', 3: 'Valerie', 4: 'José', 5: 'Nadine' };
     var r = await S.sb.from('reservations').select('*').gte('date', DATES[0]).lte('date', DATES[DATES.length - 1]).order('date').order('created_at');
     if (r.error) { toast(errMsg(r.error), true); return; }
     var q = function (s) { return '"' + String(s == null ? '' : s).replace(/"/g, '""') + '"'; };
-    var rows = [['Date', 'Service', 'Nom', 'Type', 'E-mail', 'Origine'].map(q).join(';')];
-    r.data.forEach(function (e) { rows.push([e.date, profOf(e.date), e.name, kindLabel(e.kind), e.email || '', e.walk ? 'Ajouté par le prof' : 'Réservation en ligne'].map(q).join(';')); });
+    var rows = [['Date', 'Service', 'Nom', 'Repas', 'Type', 'E-mail', 'Origine'].map(q).join(';')];
+    r.data.forEach(function (e) { rows.push([e.date, profOf(e.date), e.name, e.qty || 1, kindLabel(e.kind), e.email || '', e.walk ? 'Ajouté par le prof' : 'Réservation en ligne'].map(q).join(';')); });
     download('reservations-chez-nelson.csv', '﻿' + rows.join('\r\n'), 'text/csv;charset=utf-8');
   }
 
@@ -548,6 +559,7 @@ var PROFS = { 1: 'Nadine', 2: 'Melika', 3: 'Valerie', 4: 'José', 5: 'Nadine' };
     legend.append(h('li', {}, h('b', {}, j[0] + ' '), PROFS[j[1]]));
   });
   $('qrUrl').value = location.href.split('#')[0].split('?')[0];
+  $('qty').addEventListener('input', renderCards);
   $('qrUrl').addEventListener('input', drawQr);
   $('btnQrPng').addEventListener('click', function () { saveQr('png'); });
   $('btnQrSvg').addEventListener('click', function () { saveQr('svg'); });
@@ -565,9 +577,9 @@ var PROFS = { 1: 'Nadine', 2: 'Melika', 3: 'Valerie', 4: 'José', 5: 'Nadine' };
   try { drawQr(); } catch (e) { /* bibliothèque QR non chargée */ }
   render();
 
-  if (!configured) { showBanner('Page non configurée : renseignez SUPABASE_URL et SUPABASE_ANON_KEY au début du script (voir le guide).'); return; }
+  if (!configured) { showBanner('Page non configurée : renseignez l\'adresse et la clé dans le fichier config.js (voir le guide).'); return; }
   if (typeof supabase === 'undefined') { showBanner('Le service de réservation n\'a pas pu être chargé. Vérifiez la connexion et rechargez la page.'); return; }
-  S.sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  S.sb = supabase.createClient(CFG.url, CFG.key);
   loadTokens();
   loadPublic();
   loadStaff();
