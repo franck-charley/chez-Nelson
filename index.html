@@ -1,0 +1,578 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chez Nelson</title>
+<style>
+:root {
+  --bg: #F3F6F4; --surface: #FFFFFF; --fg: #15302A; --muted: #566D66; --line: #D6E1DB;
+  --accent: #1E6B52; --accent-ink: #FFFFFF; --accent-soft: #DCEEE5;
+  --warn: #9A5A0C; --warn-soft: #FAEAD0; --bad: #AE3329; --bad-soft: #F8DDD9;
+  --font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0E1A17; --surface: #15251F; --fg: #E3EFEA; --muted: #92AAA2; --line: #27392F;
+    --accent: #5CC6A0; --accent-ink: #07231A; --accent-soft: #173A2E;
+    --warn: #E5AA5D; --warn-soft: #3A2B12; --bad: #F2948A; --bad-soft: #3D1B17;
+    color-scheme: dark;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 15px/1.5 var(--font); }
+.wrap { max-width: 1080px; margin: 0 auto; padding: 20px 16px 40px; }
+h1, h2, h3 { margin: 0; line-height: 1.15; text-wrap: balance; }
+header { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px 24px; padding-bottom: 16px; border-bottom: 2px solid var(--fg); }
+.brand h1 { font-size: clamp(30px, 6vw, 44px); letter-spacing: -0.02em; }
+.brand p { margin: 4px 0 0; color: var(--muted); font-size: 14px; }
+.who { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+.who b { color: var(--fg); }
+.chip { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; background: var(--accent-soft); color: var(--accent); }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 12px 0 0; padding: 0; list-style: none; font-size: 13px; color: var(--muted); }
+.legend b { color: var(--fg); }
+nav { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 18px; }
+nav button { font: inherit; font-weight: 500; padding: 8px 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); cursor: pointer; }
+nav button[aria-pressed="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.banner { margin-top: 16px; padding: 10px 14px; border-radius: 8px; background: var(--warn-soft); color: var(--warn); font-size: 14px; }
+section.view { margin-top: 22px; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px; }
+.info { display: flex; flex-wrap: wrap; gap: 12px 16px; align-items: flex-end; margin-bottom: 20px; }
+.info p { margin: 0; flex: 1 1 100%; color: var(--muted); font-size: 13px; }
+.field { display: flex; flex-direction: column; gap: 4px; min-width: 0; flex: 1 1 200px; }
+.field label { font-size: 12px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); }
+input[type="text"], input[type="email"], input[type="password"], input[type="number"], select, textarea { font: inherit; color: var(--fg); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 9px 11px; width: 100%; min-width: 0; }
+textarea { resize: vertical; min-height: 64px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 290px), 1fr)); gap: 14px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.card.mine { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.card.off { opacity: 0.8; }
+.card-top { display: flex; justify-content: space-between; gap: 8px; align-items: flex-start; }
+.card h3 { font-size: 21px; }
+.card h3 small { display: block; font-size: 12px; font-weight: 500; color: var(--muted); margin-top: 2px; }
+.tag { font-size: 12px; font-weight: 600; padding: 2px 9px; border-radius: 999px; white-space: nowrap; background: var(--accent-soft); color: var(--accent); }
+.tag.warn { background: var(--warn-soft); color: var(--warn); }
+.tag.bad { background: var(--bad-soft); color: var(--bad); }
+.tag.plain { background: var(--bg); color: var(--muted); border: 1px solid var(--line); }
+.menu { display: grid; grid-template-columns: 70px 1fr; gap: 4px 10px; margin: 0; font-size: 14px; }
+.menu dt { color: var(--muted); font-size: 12px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; padding-top: 2px; }
+.menu dd { margin: 0; overflow-wrap: anywhere; }
+.menu-note { margin: 0; font-size: 13px; color: var(--muted); }
+.empty { margin: 0; color: var(--muted); font-style: italic; font-size: 14px; }
+.meter { height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; }
+.meter i { display: block; height: 100%; background: var(--accent); }
+.meter.low i { background: var(--warn); }
+.meter.full i { background: var(--bad); }
+.places { display: flex; justify-content: space-between; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.card-foot { margin-top: auto; display: flex; flex-direction: column; gap: 6px; }
+.deadline { font-size: 12px; color: var(--muted); }
+.btn { font: inherit; font-weight: 600; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--accent); background: var(--accent); color: var(--accent-ink); cursor: pointer; width: 100%; }
+.btn.alt { background: transparent; color: var(--fg); border-color: var(--line); }
+.btn.danger { background: transparent; color: var(--bad); border-color: var(--bad); }
+.btn.small { width: auto; padding: 5px 10px; font-size: 13px; }
+.btn:disabled { opacity: 0.55; cursor: not-allowed; }
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); gap: 16px; align-items: start; }
+.panel h2 { font-size: 19px; margin-bottom: 12px; }
+.form { display: flex; flex-direction: column; gap: 12px; }
+.row { display: flex; flex-wrap: wrap; gap: 12px; }
+.check { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+.check input { width: 18px; height: 18px; accent-color: var(--accent); }
+.list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.list li { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; padding: 10px 0; border-top: 1px solid var(--line); }
+.list li:first-child { border-top: 0; }
+.list .nm { flex: 1 1 140px; font-weight: 500; overflow-wrap: anywhere; min-width: 0; }
+.table-wrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th, td { text-align: left; padding: 9px 12px; border-top: 1px solid var(--line); vertical-align: top; }
+th { font-size: 12px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); border-top: 0; white-space: nowrap; }
+td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.toolbar { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 12px; }
+.toolbar h2 { margin: 0; }
+.qr-row { display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start; }
+.qrbox { width: 200px; max-width: 100%; aspect-ratio: 1; background: #fff; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; flex: none; }
+.qrbox svg { display: block; width: 100%; height: 100%; }
+.qr-side { flex: 1 1 260px; min-width: 0; }
+.login { max-width: 420px; }
+footer { margin-top: 32px; font-size: 13px; color: var(--muted); }
+[hidden] { display: none !important; }
+#toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: 16px; max-width: min(92vw, 420px); padding: 10px 16px; border-radius: 8px; background: var(--fg); color: var(--bg); font-size: 14px; z-index: 20; }
+#toast.err { background: var(--bad); color: #fff; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <h1>Chez Nelson</h1>
+      <p>Restaurant d'application, section PSR · ouvert le midi du lundi au vendredi</p>
+    </div>
+    <div class="who" id="who"></div>
+  </header>
+  <ul class="legend" id="legend" aria-label="Professeurs de service"></ul>
+  <nav id="tabs" hidden aria-label="Sections"></nav>
+  <div id="banner" class="banner" hidden></div>
+
+  <section class="view" id="v-reserver">
+    <div class="panel info">
+      <div class="field"><label for="lbl">Nom pour la réservation</label><input type="text" id="lbl" autocomplete="name" placeholder="Prénom et nom" maxlength="80"></div>
+      <div class="field"><label for="mail">E-mail (facultatif)</label><input type="email" id="mail" autocomplete="email" placeholder="Pour vous prévenir en cas d'imprévu" maxlength="120"></div>
+      <div class="field"><label for="kind">Vous êtes</label>
+        <select id="kind"><option value="int">Interne à l'EREA</option><option value="ext">Externe à l'EREA</option></select></div>
+      <p>Un repas par personne et par jour. Les réservations ferment la veille du service à 12h. Passé ce délai, adressez-vous au professeur de service. Vos données servent uniquement à organiser le service du restaurant.</p>
+    </div>
+    <div class="grid" id="cards"></div>
+  </section>
+
+  <section class="view" id="v-login" hidden>
+    <div class="panel login">
+      <h2>Espace équipe</h2>
+      <form class="form" id="loginForm">
+        <div class="field"><label for="lemail">Adresse e-mail</label><input type="email" id="lemail" autocomplete="username" required></div>
+        <div class="field"><label for="lpass">Mot de passe</label><input type="password" id="lpass" autocomplete="current-password" required></div>
+        <button class="btn" type="submit">Se connecter</button>
+        <button class="btn alt" type="button" id="loginCancel">Retour aux réservations</button>
+      </form>
+    </div>
+  </section>
+
+  <section class="view" id="v-service" hidden>
+    <div class="cols">
+      <div class="panel">
+        <h2>Menu du jour</h2>
+        <div class="form">
+          <div class="field"><label for="sdate">Date de service</label><select id="sdate"></select></div>
+          <p class="menu-note" id="sprof"></p>
+          <div class="field"><label for="fEntree">Entrée</label><input type="text" id="fEntree"></div>
+          <div class="field"><label for="fPlat">Plat</label><input type="text" id="fPlat"></div>
+          <div class="field"><label for="fDessert">Dessert</label><input type="text" id="fDessert"></div>
+          <div class="field"><label for="fNote">Remarque (allergènes, boisson…)</label><textarea id="fNote"></textarea></div>
+          <div class="row">
+            <div class="field"><label for="fCap">Nombre de repas possibles (4 à 20)</label>
+              <input type="number" id="fCap" min="4" max="20" step="1" value="12" inputmode="numeric"></div>
+            <label class="check" for="fClosed"><input type="checkbox" id="fClosed"> Pas de service ce jour</label>
+          </div>
+          <button class="btn" id="btnSave" type="button">Enregistrer le menu</button>
+        </div>
+      </div>
+      <div class="panel">
+        <h2 id="sTitle">Réservations</h2>
+        <div class="meter" id="sMeter"><i style="width:0"></i></div>
+        <p class="places" style="margin:6px 0 12px"><span id="sCount"></span><span id="sLeft"></span></p>
+        <ul class="list" id="slist"></ul>
+        <div class="form" style="margin-top:14px">
+          <div class="row">
+            <div class="field"><label for="wname">Ajouter un convive</label><input type="text" id="wname" placeholder="Nom du convive" maxlength="80"></div>
+            <div class="field"><label for="wkind">Type</label><select id="wkind"><option value="int">Interne</option><option value="ext">Externe</option></select></div>
+          </div>
+          <button class="btn alt" id="btnWalk" type="button">Ajouter à ce service</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="view" id="v-admin" hidden>
+    <div class="panel">
+      <div class="toolbar">
+        <h2>Vue d'ensemble des 4 prochaines semaines</h2>
+        <button class="btn alt small" id="btnCsv" type="button">Exporter en CSV</button>
+      </div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Date</th><th>Service</th><th>Plat</th><th>Repas</th><th>État</th></tr></thead>
+        <tbody id="atbody"></tbody>
+      </table></div>
+    </div>
+    <div class="panel" style="margin-top:16px">
+      <h2>QR code de la page de réservation</h2>
+      <div class="qr-row">
+        <div class="qrbox" id="qrBox" role="img" aria-label="QR code vers la page de réservation"></div>
+        <div class="form qr-side">
+          <p class="menu-note">Ce QR code ouvre la page de réservation. Enregistrez-le en image pour l'afficher sur le site de l'établissement ou sur une affiche.</p>
+          <div class="field"><label for="qrUrl">Adresse de la page</label><input type="text" id="qrUrl"></div>
+          <div class="row">
+            <button class="btn small" id="btnQrPng" type="button">Enregistrer en PNG</button>
+            <button class="btn alt small" id="btnQrSvg" type="button">Enregistrer en SVG</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer><a href="#" id="teamLink">Espace équipe</a></footer>
+</div>
+<div id="toast" role="status" aria-live="polite" hidden></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
+<script>
+/* ================= CONFIGURATION : à modifier ================= */
+var SUPABASE_URL = 'https://sb_publishable_36iUFp3jkmBXRD6qdhM-pQ__e7SNneq.supabase.co';
+var SUPABASE_ANON_KEY = 'sb_secret_gVxiXbMtWNYQmAFElhVA_A_fXNKCmRO';
+// Professeur de service, du lundi (1) au vendredi (5)
+var PROFS = { 1: 'Nadine', 2: 'Melika', 3: 'Valerie', 4: 'José', 5: 'Nadine' };
+/* ============================================================== */
+
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var S = { sb: null, user: null, staff: null, tab: 'reserver', days: {}, counts: {}, res: [], tokens: {}, sdate: null, busy: false, dirty: false, sig: '' };
+  var configured = SUPABASE_URL.indexOf('VOTRE') === -1 && SUPABASE_ANON_KEY.indexOf('VOTRE') === -1;
+
+  function h(tag, attrs) {
+    var e = document.createElement(tag);
+    attrs = attrs || {};
+    for (var k in attrs) {
+      var v = attrs[k];
+      if (v == null || v === false) continue;
+      if (k === 'class') e.className = v;
+      else if (k.indexOf('on') === 0) e.addEventListener(k.slice(2), v);
+      else e.setAttribute(k, v === true ? '' : v);
+    }
+    for (var i = 2; i < arguments.length; i++) {
+      var c = arguments[i];
+      if (c == null || c === false) continue;
+      e.append(c.nodeType ? c : document.createTextNode(String(c)));
+    }
+    return e;
+  }
+
+  var pad = function (n) { return String(n).padStart(2, '0'); };
+  var ymd = function (d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); };
+  var parse = function (s) { var p = s.split('-').map(Number); return new Date(p[0], p[1] - 1, p[2], 12); };
+  var fWeek = new Intl.DateTimeFormat('fr-FR', { weekday: 'long' });
+  var fDay = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'long' });
+  var up1 = function (s) { return s.charAt(0).toUpperCase() + s.slice(1); };
+  var longDate = function (s) { var d = parse(s); return up1(fWeek.format(d)) + ' ' + fDay.format(d); };
+  function upcoming(n) {
+    var out = [], d = new Date();
+    d.setHours(12, 0, 0, 0);
+    while (out.length < n) { var w = d.getDay(); if (w >= 1 && w <= 5) out.push(ymd(d)); d.setDate(d.getDate() + 1); }
+    return out;
+  }
+  var DATES = upcoming(20);
+  var profOf = function (s) { return PROFS[parse(s).getDay()]; };
+  var cap = function (d) { var c = Number((S.days[d] || {}).cap); return c >= 4 && c <= 20 ? c : 12; };
+  var count = function (d) { return S.counts[d] || 0; };
+  var isClosed = function (d) { return !!(S.days[d] || {}).closed; };
+  // Fermeture des réservations : la veille à 12h (heure locale de l'appareil, contrôle définitif côté serveur)
+  var deadline = function (d) { var p = d.split('-').map(Number); return new Date(p[0], p[1] - 1, p[2] - 1, 12, 0, 0).getTime(); };
+  var canBook = function (d) { return Date.now() < deadline(d) && !isClosed(d); };
+  var kindLabel = function (k) { return k === 'ext' ? 'Externe' : 'Interne'; };
+  var isStaff = function () { return !!S.staff; };
+  var isAdmin = function () { return !!S.staff && S.staff.role === 'admin'; };
+
+  var toastTimer;
+  function toast(msg, bad) {
+    var t = $('toast');
+    t.textContent = msg; t.className = bad ? 'err' : ''; t.hidden = false;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { t.hidden = true; }, 4500);
+  }
+  function errMsg(e) {
+    var m = (e && e.message) || '';
+    if (m.indexOf('delai_depasse') > -1) return 'Les réservations sont closes pour ce jour (limite : la veille à 12h).';
+    if (m.indexOf('complet') > -1) return 'Ce service est complet.';
+    if (m.indexOf('ferme') > -1) return 'Le restaurant est fermé ce jour.';
+    if (m.indexOf('deja_reserve') > -1 || m.indexOf('duplicate') > -1 || m.indexOf('unique') > -1) return 'Une réservation existe déjà à ce nom pour ce jour.';
+    if (m.indexOf('nom_invalide') > -1) return 'Indiquez votre nom (2 caractères au moins).';
+    if (m.indexOf('row-level security') > -1 || m.indexOf('permission') > -1) return 'Action refusée : ce jour n\'est pas dans vos jours de service.';
+    return 'Une erreur est survenue. Réessayez dans un instant.';
+  }
+  function showBanner(msg) { var b = $('banner'); b.textContent = msg || ''; b.hidden = !msg; }
+
+  /* ---------- jetons d'annulation (stockés sur l'appareil du client) ---------- */
+  function loadTokens() {
+    try { S.tokens = JSON.parse(localStorage.getItem('nelson_tokens') || '{}'); } catch (e) { S.tokens = {}; }
+    var today = ymd(new Date()), keep = {};
+    Object.keys(S.tokens).forEach(function (d) { if (d >= today) keep[d] = S.tokens[d]; });
+    S.tokens = keep; saveTokens();
+  }
+  function saveTokens() { try { localStorage.setItem('nelson_tokens', JSON.stringify(S.tokens)); } catch (e) { /* stockage indisponible */ } }
+
+  /* ---------- données publiques ---------- */
+  async function loadPublic() {
+    if (!S.sb) return;
+    var a = DATES[0], b = DATES[DATES.length - 1];
+    var r1 = await S.sb.from('days').select('*').gte('date', a).lte('date', b);
+    var r2 = await S.sb.rpc('counts', { from_date: a, to_date: b });
+    if (r1.error || r2.error) { showBanner('Impossible de joindre le service de réservation pour le moment. Réessayez dans quelques minutes.'); return; }
+    showBanner('');
+    var days = {}, counts = {};
+    r1.data.forEach(function (d) { days[d.date] = d; });
+    r2.data.forEach(function (c) { counts[c.jour] = c.n; });
+    S.days = days; S.counts = counts;
+    render();
+  }
+
+  async function book(date) {
+    if (S.busy) return;
+    var name = ($('lbl').value || '').trim();
+    if (!name) { toast('Indiquez votre nom pour réserver.', true); $('lbl').focus(); return; }
+    S.busy = true; renderCards();
+    var r = await S.sb.rpc('book_meal', { p_date: date, p_name: name, p_email: ($('mail').value || '').trim(), p_kind: $('kind').value });
+    S.busy = false;
+    if (r.error) toast(errMsg(r.error), true);
+    else { S.tokens[date] = r.data; saveTokens(); toast('Repas réservé pour le ' + longDate(date).toLowerCase() + '.'); }
+    await loadPublic();
+  }
+  async function cancelMine(date) {
+    if (S.busy) return;
+    S.busy = true; renderCards();
+    var r = await S.sb.rpc('cancel_meal', { p_token: S.tokens[date] });
+    S.busy = false;
+    if (r.error) toast(errMsg(r.error), true);
+    else { delete S.tokens[date]; saveTokens(); toast(r.data ? 'Réservation annulée.' : 'Cette réservation n\'existe plus.'); }
+    await loadPublic();
+  }
+
+  /* ---------- équipe ---------- */
+  async function loadStaff() {
+    var s = await S.sb.auth.getSession();
+    S.user = s.data.session ? s.data.session.user : null;
+    S.staff = null;
+    if (S.user) {
+      var r = await S.sb.from('staff').select('nom, role, jours').eq('user_id', S.user.id).maybeSingle();
+      if (r.data) S.staff = r.data;
+      else { await S.sb.auth.signOut(); S.user = null; toast('Ce compte n\'est pas autorisé pour l\'espace équipe.', true); }
+    }
+    if (S.staff) setupDates();
+    if (!S.staff && S.tab !== 'login') S.tab = 'reserver';
+    if (S.staff && S.tab === 'login') S.tab = 'service';
+    render();
+    if (S.staff) loadRes();
+  }
+  function setupDates() {
+    var sel = $('sdate'), prev = S.sdate;
+    sel.textContent = '';
+    var allowed = DATES.filter(function (d) { return isAdmin() || (S.staff.jours || []).indexOf(parse(d).getDay()) > -1; });
+    allowed.forEach(function (d) { sel.append(h('option', { value: d }, longDate(d))); });
+    S.sdate = allowed.indexOf(prev) > -1 ? prev : allowed[0] || null;
+    if (S.sdate) sel.value = S.sdate;
+  }
+  async function loadRes() {
+    if (!S.staff || !S.sdate) return;
+    var r = await S.sb.from('reservations').select('*').eq('date', S.sdate).order('created_at');
+    if (r.error) { toast(errMsg(r.error), true); return; }
+    S.res = r.data; renderService();
+  }
+  async function saveMenu() {
+    if (S.busy || !S.sdate) return;
+    var capVal = Number($('fCap').value);
+    if (!Number.isInteger(capVal) || capVal < 4 || capVal > 20) { toast('Le nombre de repas doit être un entier entre 4 et 20.', true); $('fCap').focus(); return; }
+    S.busy = true;
+    var r = await S.sb.from('days').upsert({
+      date: S.sdate, entree: $('fEntree').value.trim(), plat: $('fPlat').value.trim(), dessert: $('fDessert').value.trim(),
+      note: $('fNote').value.trim(), cap: capVal, closed: $('fClosed').checked, updated_by: S.user.id, updated_at: new Date().toISOString()
+    });
+    S.busy = false;
+    if (r.error) { toast(errMsg(r.error), true); return; }
+    S.dirty = false; toast('Menu enregistré.');
+    await loadPublic(); loadRes();
+  }
+  async function staffRemove(id) {
+    if (S.busy) return;
+    S.busy = true;
+    var r = await S.sb.from('reservations').delete().eq('id', id);
+    S.busy = false;
+    if (r.error) toast(errMsg(r.error), true); else toast('Réservation retirée.');
+    await loadPublic(); loadRes();
+  }
+  async function addWalk() {
+    var name = ($('wname').value || '').trim();
+    if (name.length < 2) { toast('Indiquez le nom du convive.', true); $('wname').focus(); return; }
+    if (S.busy) return;
+    S.busy = true;
+    var r = await S.sb.from('reservations').insert({ date: S.sdate, name: name, kind: $('wkind').value, walk: true });
+    S.busy = false;
+    if (r.error) { toast(errMsg(r.error), true); return; }
+    $('wname').value = '';
+    toast(S.res.length + 1 > cap(S.sdate) ? 'Convive ajouté, la capacité est dépassée.' : 'Convive ajouté.');
+    await loadPublic(); loadRes();
+  }
+  async function signIn(ev) {
+    ev.preventDefault();
+    var r = await S.sb.auth.signInWithPassword({ email: $('lemail').value.trim(), password: $('lpass').value });
+    if (r.error) { toast('Adresse e-mail ou mot de passe incorrect.', true); return; }
+    $('lpass').value = '';
+    S.tab = 'service';
+    await loadStaff();
+  }
+  async function signOut() { await S.sb.auth.signOut(); S.user = null; S.staff = null; S.tab = 'reserver'; render(); }
+
+  /* ---------- affichage ---------- */
+  function renderHeader() {
+    var who = $('who'); who.textContent = '';
+    if (!isStaff()) return;
+    who.append(h('b', {}, S.staff.nom), h('span', { class: 'chip' }, isAdmin() ? 'Administrateur' : 'Professeur'),
+      h('button', { class: 'btn alt small', type: 'button', onclick: signOut }, 'Se déconnecter'));
+  }
+  function renderTabs() {
+    var nav = $('tabs');
+    if (!isStaff()) { nav.hidden = true; return; }
+    nav.hidden = false; nav.textContent = '';
+    var tabs = [['reserver', 'Réserver'], ['service', 'Service']];
+    if (isAdmin()) tabs.push(['admin', 'Administration']);
+    tabs.forEach(function (t) {
+      nav.append(h('button', { type: 'button', 'aria-pressed': S.tab === t[0] ? 'true' : 'false', onclick: function () { S.tab = t[0]; render(); if (t[0] === 'service') loadRes(); } }, t[1]));
+    });
+  }
+  function menuBlock(day) {
+    var rows = [['Entrée', day.entree], ['Plat', day.plat], ['Dessert', day.dessert]].filter(function (r) { return r[1]; });
+    if (!rows.length) return h('p', { class: 'empty' }, 'Menu bientôt publié.');
+    var dl = h('dl', { class: 'menu' });
+    rows.forEach(function (r) { dl.append(h('dt', {}, r[0]), h('dd', {}, r[1])); });
+    return h('div', {}, dl, day.note ? h('p', { class: 'menu-note', style: 'margin-top:8px' }, day.note) : null);
+  }
+  function card(date) {
+    var day = S.days[date] || {}, c = cap(date), n = count(date), left = Math.max(0, c - n);
+    var mine = !!S.tokens[date], open = canBook(date), closed = isClosed(date);
+    var pct = Math.min(100, Math.round(n / c * 100));
+    var meterCls = 'meter' + (left === 0 ? ' full' : left <= 2 ? ' low' : '');
+    var tag = closed ? h('span', { class: 'tag plain' }, 'Pas de service') : mine ? h('span', { class: 'tag' }, 'Réservé') : left === 0 ? h('span', { class: 'tag bad' }, 'Complet') : left <= 2 ? h('span', { class: 'tag warn' }, left + (left > 1 ? ' places' : ' place')) : null;
+    var action;
+    if (closed) action = null;
+    else if (mine && open) action = h('button', { class: 'btn alt', type: 'button', disabled: S.busy, onclick: function () { cancelMine(date); } }, 'Annuler ma réservation');
+    else if (mine) action = h('button', { class: 'btn alt', type: 'button', disabled: true }, 'Réservation confirmée');
+    else if (!open) action = h('button', { class: 'btn', type: 'button', disabled: true }, 'Réservations closes');
+    else if (left === 0) action = h('button', { class: 'btn', type: 'button', disabled: true }, 'Complet');
+    else action = h('button', { class: 'btn', type: 'button', disabled: S.busy, onclick: function () { book(date); } }, 'Réserver un repas');
+    var dl = new Date(deadline(date));
+    return h('article', { class: 'card' + (mine ? ' mine' : '') + (closed ? ' off' : '') },
+      h('div', { class: 'card-top' }, h('h3', {}, longDate(date), h('small', {}, 'Service assuré par ' + profOf(date))), tag),
+      closed ? h('p', { class: 'empty' }, day.note || 'Le restaurant est fermé ce jour.') : menuBlock(day),
+      closed ? null : h('div', { class: meterCls }, h('i', { style: 'width:' + pct + '%' })),
+      closed ? null : h('div', { class: 'places' }, h('span', {}, n + ' sur ' + c + ' repas réservés'), h('span', {}, left + ' restant' + (left > 1 ? 's' : ''))),
+      h('div', { class: 'card-foot' }, action, closed ? null : h('span', { class: 'deadline' }, 'Réservation possible jusqu\'à ' + fWeek.format(dl) + ' ' + fDay.format(dl) + ', 12h')));
+  }
+  function renderCards() {
+    var box = $('cards'); box.textContent = '';
+    DATES.forEach(function (d) { box.append(card(d)); });
+  }
+  function renderService() {
+    if (!isStaff() || !S.sdate) return;
+    var date = S.sdate, day = S.days[date] || {}, c = cap(date), n = S.res.length;
+    var dl = new Date(deadline(date));
+    $('sprof').textContent = 'Service assuré par ' + profOf(date) + '. Réservations closes le ' + fWeek.format(dl) + ' ' + fDay.format(dl) + ' à 12h.';
+    var sig = date + '|' + JSON.stringify(day);
+    if (sig !== S.sig && !S.dirty) {
+      $('fEntree').value = day.entree || ''; $('fPlat').value = day.plat || ''; $('fDessert').value = day.dessert || '';
+      $('fNote').value = day.note || ''; $('fCap').value = String(cap(date)); $('fClosed').checked = !!day.closed;
+      S.sig = sig;
+    }
+    $('sTitle').textContent = 'Réservations du ' + longDate(date).toLowerCase();
+    var meter = $('sMeter'); meter.className = 'meter' + (n >= c ? ' full' : c - n <= 2 ? ' low' : '');
+    meter.firstChild.style.width = Math.min(100, Math.round(n / c * 100)) + '%';
+    $('sCount').textContent = n + ' sur ' + c + ' repas';
+    $('sLeft').textContent = n > c ? (n - c) + ' au-delà de la capacité' : (c - n) + ' restant' + (c - n > 1 ? 's' : '');
+    var ul = $('slist'); ul.textContent = '';
+    if (!S.res.length) ul.append(h('li', {}, h('span', { class: 'empty' }, 'Aucune réservation pour ce service.')));
+    S.res.forEach(function (e, i) {
+      ul.append(h('li', {},
+        h('span', { class: 'nm' }, e.name),
+        h('span', { class: 'tag plain' }, kindLabel(e.kind)),
+        e.walk ? h('span', { class: 'tag plain' }, 'Ajouté par le prof') : null,
+        i >= c ? h('span', { class: 'tag warn' }, 'Hors capacité') : null,
+        h('button', { class: 'btn danger small', type: 'button', disabled: S.busy, onclick: function () { staffRemove(e.id); } }, 'Retirer')));
+    });
+  }
+  function renderAdmin() {
+    var tb = $('atbody'); tb.textContent = '';
+    if (!isAdmin()) return;
+    DATES.forEach(function (d) {
+      var day = S.days[d] || {}, c = cap(d), n = count(d);
+      var st = day.closed ? h('span', { class: 'tag plain' }, 'Fermé') : !day.plat ? h('span', { class: 'tag warn' }, 'Menu à saisir') : n >= c ? h('span', { class: 'tag bad' }, 'Complet') : h('span', { class: 'tag' }, 'Ouvert');
+      tb.append(h('tr', {}, h('td', {}, longDate(d)), h('td', {}, profOf(d)), h('td', {}, day.plat || '–'), h('td', { class: 'num' }, day.closed ? '–' : n + ' / ' + c), h('td', {}, st)));
+    });
+  }
+  function render() {
+    renderHeader(); renderTabs();
+    $('v-reserver').hidden = S.tab !== 'reserver';
+    $('v-login').hidden = S.tab !== 'login';
+    $('v-service').hidden = S.tab !== 'service' || !isStaff();
+    $('v-admin').hidden = S.tab !== 'admin' || !isAdmin();
+    $('teamLink').hidden = isStaff();
+    if (S.tab === 'reserver') renderCards();
+    if (S.tab === 'service') renderService();
+    if (S.tab === 'admin') renderAdmin();
+  }
+
+  /* ---------- fichiers téléchargés ---------- */
+  function download(filename, data, type) {
+    var blob = data instanceof Blob ? data : new Blob([data], { type: type });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = filename;
+    document.body.append(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 2000);
+  }
+  async function exportCsv() {
+    var r = await S.sb.from('reservations').select('*').gte('date', DATES[0]).lte('date', DATES[DATES.length - 1]).order('date').order('created_at');
+    if (r.error) { toast(errMsg(r.error), true); return; }
+    var q = function (s) { return '"' + String(s == null ? '' : s).replace(/"/g, '""') + '"'; };
+    var rows = [['Date', 'Service', 'Nom', 'Type', 'E-mail', 'Origine'].map(q).join(';')];
+    r.data.forEach(function (e) { rows.push([e.date, profOf(e.date), e.name, kindLabel(e.kind), e.email || '', e.walk ? 'Ajouté par le prof' : 'Réservation en ligne'].map(q).join(';')); });
+    download('reservations-chez-nelson.csv', '﻿' + rows.join('\r\n'), 'text/csv;charset=utf-8');
+  }
+
+  /* ---------- QR code ---------- */
+  function qrModel() {
+    var url = ($('qrUrl').value || '').trim();
+    if (!url || typeof qrcode === 'undefined') return null;
+    var qr = qrcode(0, 'M'); qr.addData(url); qr.make();
+    return qr;
+  }
+  function qrSvg(qr) {
+    var n = qr.getModuleCount(), m = 4, p = '';
+    for (var r = 0; r < n; r++) for (var c = 0; c < n; c++) if (qr.isDark(r, c)) p += 'M' + (c + m) + ' ' + (r + m) + 'h1v1h-1z';
+    var s = n + 2 * m;
+    return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + s + ' ' + s + '" shape-rendering="crispEdges"><rect width="' + s + '" height="' + s + '" fill="#fff"/><path d="' + p + '" fill="#000"/></svg>';
+  }
+  function drawQr() {
+    var box = $('qrBox');
+    try { var qr = qrModel(); box.innerHTML = qr ? qrSvg(qr) : ''; } catch (e) { box.textContent = ''; toast('Adresse trop longue pour un QR code.', true); }
+  }
+  function saveQr(kind) {
+    var qr = qrModel();
+    if (!qr) { toast('QR code indisponible pour le moment.', true); return; }
+    if (kind === 'svg') { download('qr-chez-nelson.svg', qrSvg(qr), 'image/svg+xml'); return; }
+    var n = qr.getModuleCount(), m = 4, s = n + 2 * m, px = Math.ceil(1024 / s), cv = document.createElement('canvas');
+    cv.width = cv.height = s * px;
+    var g = cv.getContext('2d');
+    g.fillStyle = '#fff'; g.fillRect(0, 0, cv.width, cv.height); g.fillStyle = '#000';
+    for (var r = 0; r < n; r++) for (var c = 0; c < n; c++) if (qr.isDark(r, c)) g.fillRect((c + m) * px, (r + m) * px, px, px);
+    cv.toBlob(function (b) { download('qr-chez-nelson.png', b, 'image/png'); }, 'image/png');
+  }
+
+  /* ---------- démarrage ---------- */
+  var legend = $('legend');
+  [['Lundi', 1], ['Mardi', 2], ['Mercredi', 3], ['Jeudi', 4], ['Vendredi', 5]].forEach(function (j) {
+    legend.append(h('li', {}, h('b', {}, j[0] + ' '), PROFS[j[1]]));
+  });
+  $('qrUrl').value = location.href.split('#')[0].split('?')[0];
+  $('qrUrl').addEventListener('input', drawQr);
+  $('btnQrPng').addEventListener('click', function () { saveQr('png'); });
+  $('btnQrSvg').addEventListener('click', function () { saveQr('svg'); });
+  $('btnCsv').addEventListener('click', exportCsv);
+  $('btnSave').addEventListener('click', saveMenu);
+  $('btnWalk').addEventListener('click', addWalk);
+  $('loginForm').addEventListener('submit', signIn);
+  $('loginCancel').addEventListener('click', function () { S.tab = 'reserver'; render(); });
+  $('teamLink').addEventListener('click', function (ev) { ev.preventDefault(); S.tab = 'login'; render(); });
+  $('sdate').addEventListener('change', function () { S.sdate = $('sdate').value; S.dirty = false; S.sig = ''; loadRes(); });
+  ['fEntree', 'fPlat', 'fDessert', 'fNote', 'fCap', 'fClosed'].forEach(function (id) {
+    $(id).addEventListener('input', function () { S.dirty = true; });
+    $(id).addEventListener('change', function () { S.dirty = true; });
+  });
+  try { drawQr(); } catch (e) { /* bibliothèque QR non chargée */ }
+  render();
+
+  if (!configured) { showBanner('Page non configurée : renseignez SUPABASE_URL et SUPABASE_ANON_KEY au début du script (voir le guide).'); return; }
+  if (typeof supabase === 'undefined') { showBanner('Le service de réservation n\'a pas pu être chargé. Vérifiez la connexion et rechargez la page.'); return; }
+  S.sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  loadTokens();
+  loadPublic();
+  loadStaff();
+  setInterval(function () { if (!document.hidden) { loadPublic(); if (S.tab === 'service') loadRes(); } }, 45000);
+})();
+</script>
+</body>
+</html>
