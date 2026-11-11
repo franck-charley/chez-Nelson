@@ -295,7 +295,7 @@ var PROFS = { 1: 'Nadine', 2: 'Melika', 3: 'Valerie', 4: 'José', 5: 'Nadine' };
     var a = DATES[0], b = DATES[DATES.length - 1];
     var r1 = await S.sb.from('days').select('*').gte('date', a).lte('date', b);
     var r2 = await S.sb.rpc('counts', { from_date: a, to_date: b });
-    if (r1.error || r2.error) { showBanner('Impossible de joindre le service de réservation pour le moment. Réessayez dans quelques minutes.'); return; }
+    if (r1.error || r2.error) { var er = r1.error || r2.error; showBanner('Impossible de joindre le service de réservation pour le moment. Détail technique : ' + (er.message || er.code || 'inconnu') + (er.hint ? ' (' + er.hint + ')' : '')); return; }
     showBanner('');
     var days = {}, counts = {};
     r1.data.forEach(function (d) { days[d.date] = d; });
