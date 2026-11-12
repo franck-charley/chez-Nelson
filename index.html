@@ -189,7 +189,7 @@ footer { margin-top: 32px; font-size: 13px; color: var(--muted); }
   <section class="view" id="v-admin" hidden>
     <div class="panel">
       <div class="toolbar">
-        <h2>Vue d'ensemble des 4 prochaines semaines</h2>
+        <h2>Vue d'ensemble des 10 prochains jours de service</h2>
         <button class="btn alt small" id="btnCsv" type="button">Exporter en CSV</button>
       </div>
       <div class="table-wrap"><table>
@@ -223,7 +223,7 @@ footer { margin-top: 32px; font-size: 13px; color: var(--muted); }
 <script>
 (function () {
   var CFG = window.NELSON_CONFIG || {};
-  var PROFS = CFG.profs || { 1: 'Nadine', 2: 'Melika', 3: 'Valerie', 4: 'José', 5: 'Nadine' };
+  var PROFS = CFG.profs || { 1: 'Mme Leblanc', 2: 'Mme Dierendonck', 3: 'Mme Fossard', 4: 'M. Crepieux', 5: 'Mme Leblanc' };
   var $ = function (id) { return document.getElementById(id); };
   var S = { cancelOpen: null, cx: { name: '', code: '' }, sb: null, user: null, staff: null, tab: 'reserver', days: {}, counts: {}, res: [], tokens: {}, sdate: null, busy: false, dirty: false, sig: '' };
   var configured = !!CFG.url && !!CFG.key && CFG.url.indexOf('VOTRE') === -1 && CFG.key.indexOf('VOTRE') === -1;
@@ -259,7 +259,7 @@ footer { margin-top: 32px; font-size: 13px; color: var(--muted); }
     while (out.length < n) { var w = d.getDay(); if (w >= 1 && w <= 5) out.push(ymd(d)); d.setDate(d.getDate() + 1); }
     return out;
   }
-  var DATES = upcoming(20);
+  var DATES = upcoming(10);
   var profOf = function (s) { return PROFS[parse(s).getDay()]; };
   var cap = function (d) { var c = Number((S.days[d] || {}).cap); return c >= 4 && c <= 20 ? c : 12; };
   var count = function (d) { return S.counts[d] || 0; };
