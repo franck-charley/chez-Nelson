@@ -27,6 +27,10 @@ h1, h2, h3 { margin: 0; line-height: 1.15; text-wrap: balance; }
 header { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px 24px; padding-bottom: 16px; border-bottom: 2px solid var(--fg); }
 .brand h1 { font-size: clamp(30px, 6vw, 44px); letter-spacing: -0.02em; }
 .brand p { margin: 4px 0 0; color: var(--muted); font-size: 14px; }
+.brand-row { display: flex; align-items: center; gap: 14px; min-width: 0; }
+.logo { height: 64px; width: auto; max-width: 35vw; object-fit: contain; flex: none; }
+.hero { margin-top: 16px; border-radius: 10px; overflow: hidden; border: 1px solid var(--line); background: var(--surface); }
+.hero img { display: block; width: 100%; height: clamp(150px, 30vw, 280px); object-fit: cover; }
 .who { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
 .who b { color: var(--fg); }
 .chip { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; background: var(--accent-soft); color: var(--accent); }
@@ -105,11 +109,17 @@ footer { margin-top: 32px; font-size: 13px; color: var(--muted); }
 <div class="wrap">
   <header>
     <div class="brand">
-      <h1>Chez Nelson</h1>
-      <p>Restaurant d'application, section PSR · ouvert le midi du lundi au vendredi</p>
+      <div class="brand-row">
+        <img id="logo" class="logo" alt="" hidden>
+        <div>
+          <h1>Chez Nelson</h1>
+          <p>Restaurant d'application, section PSR · ouvert le midi du lundi au vendredi</p>
+        </div>
+      </div>
     </div>
     <div class="who" id="who"></div>
   </header>
+  <div class="hero" id="hero" hidden><img id="photo" alt=""></div>
   <ul class="legend" id="legend" aria-label="Professeurs de service"></ul>
   <nav id="tabs" hidden aria-label="Sections"></nav>
   <div id="banner" class="banner" hidden></div>
@@ -121,7 +131,9 @@ footer { margin-top: 32px; font-size: 13px; color: var(--muted); }
       <div class="field"><label for="kind">Vous êtes</label>
         <select id="kind"><option value="int">Interne à l'EREA</option><option value="ext">Externe à l'EREA</option></select></div>
       <div class="field"><label for="qty">Nombre de repas (1 à 10)</label><input type="number" id="qty" min="1" max="10" step="1" value="1" inputmode="numeric"></div>
-      <p>Une réservation par nom et par jour, pour 1 à 10 repas. Les réservations ferment la veille du service à 12h. Passé ce délai, adressez-vous au professeur de service. Vos données servent uniquement à organiser le service du restaurant.</p>
+      <div class="field"><label for="code">Code d'annulation (4 à 12 caractères)</label><input type="text" id="code" maxlength="12" autocomplete="off" placeholder="À retenir : demandé pour annuler"></div>
+      <p>Une réservation par nom et par jour, pour 1 à 10 repas. Retenez votre code d'annulation : il sera demandé, avec votre nom, pour annuler. Les réservations ferment la veille du service à 12h. Passé ce délai, adressez-vous au professeur de service. Vos données servent uniquement à organiser le service du restaurant.</p>
+      <button type="button" class="btn alt small" id="btnForget" hidden>Ce n'est pas vous ? Effacer de cet appareil les réservations mémorisées</button>
     </div>
     <div class="grid" id="cards"></div>
   </section>
@@ -213,7 +225,7 @@ footer { margin-top: 32px; font-size: 13px; color: var(--muted); }
   var CFG = window.NELSON_CONFIG || {};
   var PROFS = CFG.profs || { 1: 'Nadine', 2: 'Melika', 3: 'Valerie', 4: 'José', 5: 'Nadine' };
   var $ = function (id) { return document.getElementById(id); };
-  var S = { sb: null, user: null, staff: null, tab: 'reserver', days: {}, counts: {}, res: [], tokens: {}, sdate: null, busy: false, dirty: false, sig: '' };
+  var S = { cancelOpen: null, cx: { name: '', code: '' }, sb: null, user: null, staff: null, tab: 'reserver', days: {}, counts: {}, res: [], tokens: {}, sdate: null, busy: false, dirty: false, sig: '' };
   var configured = !!CFG.url && !!CFG.key && CFG.url.indexOf('VOTRE') === -1 && CFG.key.indexOf('VOTRE') === -1;
 
   function h(tag, attrs) {
@@ -260,16 +272,17 @@ footer { margin-top: 32px; font-size: 13px; color: var(--muted); }
   var isAdmin = function () { return !!S.staff && S.staff.role === 'admin'; };
 
   var toastTimer;
-  function toast(msg, bad) {
+  function toast(msg, bad, ms) {
     var t = $('toast');
     t.textContent = msg; t.className = bad ? 'err' : ''; t.hidden = false;
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(function () { t.hidden = true; }, 4500);
+    toastTimer = setTimeout(function () { t.hidden = true; }, ms || 4500);
   }
   function errMsg(e) {
     var m = (e && e.message) || '';
     if (m.indexOf('delai_depasse') > -1) return 'Les réservations sont closes pour ce jour (limite : la veille à 12h).';
     if (m.indexOf('places_insuffisantes') > -1) return 'Il ne reste pas assez de places pour ce nombre de repas.';
+    if (m.indexOf('code_invalide') > -1) return 'Choisissez un code d\'annulation de 4 à 12 caractères.';
     if (m.indexOf('quantite_invalide') > -1) return 'Le nombre de repas doit être compris entre 1 et 10.';
     if (m.indexOf('complet') > -1) return 'Ce service est complet.';
     if (m.indexOf('ferme') > -1) return 'Le restaurant est fermé ce jour.';
@@ -288,6 +301,7 @@ footer { margin-top: 32px; font-size: 13px; color: var(--muted); }
     S.tokens = keep; saveTokens();
   }
   var tokOf = function (v) { return v && typeof v === 'object' ? v.t : v; };
+  var nameOf = function (v) { return v && typeof v === 'object' ? v.n || '' : ''; };
   var qtyOf = function (v) { return v && typeof v === 'object' ? v.q || 1 : 1; };
   var wantQty = function () { var q = parseInt($('qty').value, 10); return q >= 1 && q <= 10 ? q : 1; };
   function saveTokens() { try { localStorage.setItem('nelson_tokens', JSON.stringify(S.tokens)); } catch (e) { /* stockage indisponible */ } }
@@ -311,22 +325,31 @@ footer { margin-top: 32px; font-size: 13px; color: var(--muted); }
     if (S.busy) return;
     var name = ($('lbl').value || '').trim();
     if (!name) { toast('Indiquez votre nom pour réserver.', true); $('lbl').focus(); return; }
+    var code = ($('code').value || '').trim();
+    if (code.length < 4 || code.length > 12) { toast('Choisissez un code d\'annulation de 4 à 12 caractères.', true); $('code').focus(); return; }
     S.busy = true; renderCards();
     var qty = parseInt($('qty').value, 10);
     if (!(qty >= 1 && qty <= 10)) { S.busy = false; renderCards(); toast('Le nombre de repas doit être compris entre 1 et 10.', true); $('qty').focus(); return; }
-    var r = await S.sb.rpc('book_meal', { p_date: date, p_name: name, p_email: ($('mail').value || '').trim(), p_kind: $('kind').value, p_qty: qty });
+    var r = await S.sb.rpc('book_meal', { p_date: date, p_name: name, p_email: ($('mail').value || '').trim(), p_kind: $('kind').value, p_qty: qty, p_code: code });
     S.busy = false;
     if (r.error) toast(errMsg(r.error), true);
-    else { S.tokens[date] = { t: r.data, q: qty }; saveTokens(); toast((qty > 1 ? qty + ' repas réservés' : 'Repas réservé') + ' pour le ' + longDate(date).toLowerCase() + '.'); }
+    else { S.tokens[date] = { q: qty, n: name }; saveTokens(); $('code').value = ''; toast((qty > 1 ? qty + ' repas réservés' : 'Repas réservé') + ' pour le ' + longDate(date).toLowerCase() + '. Gardez votre code d\'annulation : ' + code, false, 15000); }
     await loadPublic();
   }
-  async function cancelMine(date) {
+  async function cancelBooking(date) {
     if (S.busy) return;
+    var name = (S.cx.name || '').trim(), code = (S.cx.code || '').trim();
+    if (!name || !code) { toast('Indiquez le nom de la réservation et son code.', true); return; }
     S.busy = true; renderCards();
-    var r = await S.sb.rpc('cancel_meal', { p_token: tokOf(S.tokens[date]) });
+    var r = await S.sb.rpc('cancel_meal', { p_date: date, p_name: name, p_code: code });
     S.busy = false;
     if (r.error) toast(errMsg(r.error), true);
-    else { delete S.tokens[date]; saveTokens(); toast(r.data ? 'Réservation annulée.' : 'Cette réservation n\'existe plus.'); }
+    else if (r.data === 'ok') {
+      var t = S.tokens[date];
+      if (t && nameOf(t).toLowerCase() === name.toLowerCase()) { delete S.tokens[date]; saveTokens(); }
+      S.cancelOpen = null; S.cx.code = '';
+      toast('Réservation annulée.');
+    } else toast('Annulation impossible : nom ou code incorrect. Après 5 essais, contactez le professeur de service.', true, 8000);
     await loadPublic();
   }
 
@@ -430,6 +453,19 @@ footer { margin-top: 32px; font-size: 13px; color: var(--muted); }
     rows.forEach(function (r) { dl.append(h('dt', {}, r[0]), h('dd', {}, r[1])); });
     return h('div', {}, dl, day.note ? h('p', { class: 'menu-note', style: 'margin-top:8px' }, day.note) : null);
   }
+  function cancelBox(date) {
+    if (S.cancelOpen !== date) {
+      return h('button', { class: 'btn alt small', type: 'button', onclick: function () { S.cancelOpen = date; S.cx.name = S.cx.name || nameOf(S.tokens[date]) || ($('lbl').value || '').trim(); renderCards(); } }, 'Annuler une réservation');
+    }
+    return h('div', { class: 'form' },
+      h('div', { class: 'field' }, h('label', { for: 'cxName' }, 'Nom de la réservation'),
+        h('input', { type: 'text', id: 'cxName', maxlength: '80', value: S.cx.name, oninput: function (e) { S.cx.name = e.target.value; } })),
+      h('div', { class: 'field' }, h('label', { for: 'cxCode' }, 'Code d\'annulation'),
+        h('input', { type: 'text', id: 'cxCode', maxlength: '12', autocomplete: 'off', value: S.cx.code, oninput: function (e) { S.cx.code = e.target.value; } })),
+      h('div', { class: 'row' },
+        h('button', { class: 'btn danger small', type: 'button', disabled: S.busy, onclick: function () { cancelBooking(date); } }, 'Confirmer l\'annulation'),
+        h('button', { class: 'btn alt small', type: 'button', onclick: function () { S.cancelOpen = null; S.cx.code = ''; renderCards(); } }, 'Fermer')));
+  }
   function card(date) {
     var day = S.days[date] || {}, c = cap(date), n = count(date), left = Math.max(0, c - n);
     var mine = !!S.tokens[date], open = canBook(date), closed = isClosed(date), want = wantQty(), mq = qtyOf(S.tokens[date]);
@@ -438,8 +474,7 @@ footer { margin-top: 32px; font-size: 13px; color: var(--muted); }
     var tag = closed ? h('span', { class: 'tag plain' }, 'Pas de service') : mine ? h('span', { class: 'tag' }, mq > 1 ? 'Réservé × ' + mq : 'Réservé') : left === 0 ? h('span', { class: 'tag bad' }, 'Complet') : left <= 2 ? h('span', { class: 'tag warn' }, left + (left > 1 ? ' places' : ' place')) : null;
     var action;
     if (closed) action = null;
-    else if (mine && open) action = h('button', { class: 'btn alt', type: 'button', disabled: S.busy, onclick: function () { cancelMine(date); } }, 'Annuler ma réservation');
-    else if (mine) action = h('button', { class: 'btn alt', type: 'button', disabled: true }, 'Réservation confirmée');
+    else if (mine && !open) action = h('button', { class: 'btn alt', type: 'button', disabled: true }, 'Réservation confirmée');
     else if (!open) action = h('button', { class: 'btn', type: 'button', disabled: true }, 'Réservations closes');
     else if (left === 0) action = h('button', { class: 'btn', type: 'button', disabled: true }, 'Complet');
     else if (want > left) action = h('button', { class: 'btn', type: 'button', disabled: true }, 'Il reste ' + left + (left > 1 ? ' places' : ' place'));
@@ -450,10 +485,11 @@ footer { margin-top: 32px; font-size: 13px; color: var(--muted); }
       closed ? h('p', { class: 'empty' }, day.note || 'Le restaurant est fermé ce jour.') : menuBlock(day),
       closed ? null : h('div', { class: meterCls }, h('i', { style: 'width:' + pct + '%' })),
       closed ? null : h('div', { class: 'places' }, h('span', {}, n + ' sur ' + c + ' repas réservés'), h('span', {}, left + ' restant' + (left > 1 ? 's' : ''))),
-      h('div', { class: 'card-foot' }, action, closed ? null : h('span', { class: 'deadline' }, 'Réservation possible jusqu\'à ' + fWeek.format(dl) + ' ' + fDay.format(dl) + ', 12h')));
+      h('div', { class: 'card-foot' }, action, open && !closed ? cancelBox(date) : null, closed ? null : h('span', { class: 'deadline' }, 'Réservation possible jusqu\'à ' + fWeek.format(dl) + ' ' + fDay.format(dl) + ', 12h')));
   }
   function renderCards() {
     var box = $('cards'); box.textContent = '';
+    $('btnForget').hidden = !Object.keys(S.tokens).length;
     DATES.forEach(function (d) { box.append(card(d)); });
   }
   function sumRes() { return S.res.reduce(function (a, e) { return a + (e.qty || 1); }, 0); }
@@ -558,8 +594,19 @@ footer { margin-top: 32px; font-size: 13px; color: var(--muted); }
   [['Lundi', 1], ['Mardi', 2], ['Mercredi', 3], ['Jeudi', 4], ['Vendredi', 5]].forEach(function (j) {
     legend.append(h('li', {}, h('b', {}, j[0] + ' '), PROFS[j[1]]));
   });
+  // Logo et photo : fichiers déposés à côté de index.html (logo.png et photo.jpg par défaut)
+  (function () {
+    var logo = $('logo'), photo = $('photo'), hero = $('hero');
+    logo.onload = function () { logo.hidden = false; }; logo.onerror = function () { logo.hidden = true; };
+    photo.onload = function () { hero.hidden = false; }; photo.onerror = function () { hero.hidden = true; };
+    logo.alt = CFG.logoAlt || 'Logo du restaurant d\'application';
+    photo.alt = CFG.photoAlt || 'Photo du restaurant d\'application';
+    logo.src = CFG.logo || 'logo.png';
+    photo.src = CFG.photo || 'photo.jpg';
+  })();
   $('qrUrl').value = location.href.split('#')[0].split('?')[0];
   $('qty').addEventListener('input', renderCards);
+  $('btnForget').addEventListener('click', function () { S.tokens = {}; saveTokens(); toast('Réservations effacées de cet appareil. Elles ne sont pas annulées.'); renderCards(); });
   $('qrUrl').addEventListener('input', drawQr);
   $('btnQrPng').addEventListener('click', function () { saveQr('png'); });
   $('btnQrSvg').addEventListener('click', function () { saveQr('svg'); });
@@ -583,7 +630,7 @@ footer { margin-top: 32px; font-size: 13px; color: var(--muted); }
   loadTokens();
   loadPublic();
   loadStaff();
-  setInterval(function () { if (!document.hidden) { loadPublic(); if (S.tab === 'service') loadRes(); } }, 45000);
+  setInterval(function () { if (!document.hidden && !S.cancelOpen) { loadPublic(); if (S.tab === 'service') loadRes(); } }, 45000);
 })();
 </script>
 </body>
