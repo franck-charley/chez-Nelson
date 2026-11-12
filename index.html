@@ -132,6 +132,9 @@ footer { margin-top: 32px; font-size: 13px; color: var(--muted); }
         <select id="kind"><option value="int">Interne à l'EREA</option><option value="ext">Externe à l'EREA</option></select></div>
       <div class="field"><label for="qty">Nombre de repas (1 à 10)</label><input type="number" id="qty" min="1" max="10" step="1" value="1" inputmode="numeric"></div>
       <div class="field"><label for="code">Code d'annulation (4 à 12 caractères)</label><input type="text" id="code" maxlength="12" autocomplete="off" placeholder="À retenir : demandé pour annuler"></div>
+      <div class="field" style="flex-basis: 100%"><label for="info">Informations diverses (facultatif)</label>
+        <textarea id="info" maxlength="300" placeholder="Ex. : arrivée à 12h30, table pour 6 personnes, repas sans porc…"></textarea>
+        <span class="menu-note">Visible uniquement par l'équipe du restaurant. 300 caractères au maximum.</span></div>
       <p>Une réservation par nom et par jour, pour 1 à 10 repas. Retenez votre code d'annulation : il sera demandé, avec votre nom, pour annuler. Les réservations ferment la veille du service à 12h. Passé ce délai, adressez-vous au professeur de service. Vos données servent uniquement à organiser le service du restaurant.</p>
       <button type="button" class="btn alt small" id="btnForget" hidden>Ce n'est pas vous ? Effacer de cet appareil les réservations mémorisées</button>
     </div>
@@ -330,10 +333,10 @@ footer { margin-top: 32px; font-size: 13px; color: var(--muted); }
     S.busy = true; renderCards();
     var qty = parseInt($('qty').value, 10);
     if (!(qty >= 1 && qty <= 10)) { S.busy = false; renderCards(); toast('Le nombre de repas doit être compris entre 1 et 10.', true); $('qty').focus(); return; }
-    var r = await S.sb.rpc('book_meal', { p_date: date, p_name: name, p_email: ($('mail').value || '').trim(), p_kind: $('kind').value, p_qty: qty, p_code: code });
+    var r = await S.sb.rpc('book_meal', { p_date: date, p_name: name, p_email: ($('mail').value || '').trim(), p_kind: $('kind').value, p_qty: qty, p_code: code, p_info: ($('info').value || '').trim() });
     S.busy = false;
     if (r.error) toast(errMsg(r.error), true);
-    else { S.tokens[date] = { q: qty, n: name }; saveTokens(); $('code').value = ''; toast((qty > 1 ? qty + ' repas réservés' : 'Repas réservé') + ' pour le ' + longDate(date).toLowerCase() + '. Gardez votre code d\'annulation : ' + code, false, 15000); }
+    else { S.tokens[date] = { q: qty, n: name }; saveTokens(); $('code').value = ''; $('info').value = ''; toast((qty > 1 ? qty + ' repas réservés' : 'Repas réservé') + ' pour le ' + longDate(date).toLowerCase() + '. Gardez votre code d\'annulation : ' + code, false, 15000); }
     await loadPublic();
   }
   async function cancelBooking(date) {
@@ -519,7 +522,8 @@ footer { margin-top: 32px; font-size: 13px; color: var(--muted); }
         h('span', { class: 'tag plain' }, kindLabel(e.kind)),
         e.walk ? h('span', { class: 'tag plain' }, 'Ajouté par le prof') : null,
         run > c ? h('span', { class: 'tag warn' }, 'Hors capacité') : null,
-        h('button', { class: 'btn danger small', type: 'button', disabled: S.busy, onclick: function () { staffRemove(e.id); } }, 'Retirer')));
+        h('button', { class: 'btn danger small', type: 'button', disabled: S.busy, onclick: function () { staffRemove(e.id); } }, 'Retirer'),
+        e.info ? h('p', { class: 'menu-note', style: 'flex: 1 1 100%; margin: 0; overflow-wrap: anywhere' }, 'Info : ' + e.info) : null));
     });
   }
   function renderAdmin() {
@@ -555,8 +559,8 @@ footer { margin-top: 32px; font-size: 13px; color: var(--muted); }
     var r = await S.sb.from('reservations').select('*').gte('date', DATES[0]).lte('date', DATES[DATES.length - 1]).order('date').order('created_at');
     if (r.error) { toast(errMsg(r.error), true); return; }
     var q = function (s) { return '"' + String(s == null ? '' : s).replace(/"/g, '""') + '"'; };
-    var rows = [['Date', 'Service', 'Nom', 'Repas', 'Type', 'E-mail', 'Origine'].map(q).join(';')];
-    r.data.forEach(function (e) { rows.push([e.date, profOf(e.date), e.name, e.qty || 1, kindLabel(e.kind), e.email || '', e.walk ? 'Ajouté par le prof' : 'Réservation en ligne'].map(q).join(';')); });
+    var rows = [['Date', 'Service', 'Nom', 'Repas', 'Type', 'E-mail', 'Origine', 'Informations'].map(q).join(';')];
+    r.data.forEach(function (e) { rows.push([e.date, profOf(e.date), e.name, e.qty || 1, kindLabel(e.kind), e.email || '', e.walk ? 'Ajouté par le prof' : 'Réservation en ligne', e.info || ''].map(q).join(';')); });
     download('reservations-chez-nelson.csv', '﻿' + rows.join('\r\n'), 'text/csv;charset=utf-8');
   }
 
