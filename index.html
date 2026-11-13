@@ -99,6 +99,10 @@ td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
 .qrbox svg { display: block; width: 100%; height: 100%; }
 .qr-side { flex: 1 1 260px; min-width: 0; }
 .login { max-width: 420px; }
+details.panel summary { cursor: pointer; font-weight: 600; }
+details.panel h3 { font-size: 15px; margin: 14px 0 4px; }
+details.panel p, details.panel ul { margin: 4px 0; font-size: 14px; color: var(--muted); }
+details.panel ul { padding-left: 20px; }
 footer { margin-top: 32px; font-size: 13px; color: var(--muted); }
 [hidden] { display: none !important; }
 #toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: 16px; max-width: min(92vw, 420px); padding: 10px 16px; border-radius: 8px; background: var(--fg); color: var(--bg); font-size: 14px; z-index: 20; }
@@ -113,7 +117,7 @@ footer { margin-top: 32px; font-size: 13px; color: var(--muted); }
         <img id="logo" class="logo" alt="" hidden>
         <div>
           <h1>Chez Nelson</h1>
-          <p>Restaurant d'application, section PSR · ouvert le midi du lundi au vendredi</p>
+          <p>Restaurant d'application, section PSR/GRETA · ouvert le midi du lundi au vendredi</p>
         </div>
       </div>
     </div>
@@ -134,8 +138,8 @@ footer { margin-top: 32px; font-size: 13px; color: var(--muted); }
       <div class="field"><label for="code">Code d'annulation (4 à 12 caractères)</label><input type="text" id="code" maxlength="12" autocomplete="off" placeholder="À retenir : demandé pour annuler"></div>
       <div class="field" style="flex-basis: 100%"><label for="info">Informations diverses (facultatif)</label>
         <textarea id="info" maxlength="300" placeholder="Ex. : arrivée à 12h30, table pour 6 personnes, repas sans porc…"></textarea>
-        <span class="menu-note">Visible uniquement par l'équipe du restaurant. 300 caractères au maximum.</span></div>
-      <p>Une réservation par nom et par jour, pour 1 à 10 repas. Retenez votre code d'annulation : il sera demandé, avec votre nom, pour annuler. Les réservations ferment la veille du service à 12h. Passé ce délai, adressez-vous au professeur de service. Vos données servent uniquement à organiser le service du restaurant.</p>
+        <span class="menu-note">Visible uniquement par l'équipe du restaurant. 300 caractères au maximum. N'indiquez pas de données de santé.</span></div>
+      <p>Une réservation par nom et par jour, pour 1 à 10 repas. Retenez votre code d'annulation : il sera demandé, avec votre nom, pour annuler. Les réservations ferment la veille du service à 12h. Passé ce délai, adressez-vous au professeur de service. Vos données servent uniquement à organiser le service du restaurant, voir <a href="#rgpd" class="rgpdlink">Protection des données</a>.</p>
       <button type="button" class="btn alt small" id="btnForget" hidden>Ce n'est pas vous ? Effacer de cet appareil les réservations mémorisées</button>
     </div>
     <div class="grid" id="cards"></div>
@@ -216,7 +220,29 @@ footer { margin-top: 32px; font-size: 13px; color: var(--muted); }
     </div>
   </section>
 
-  <footer><a href="#" id="teamLink">Espace équipe</a></footer>
+  <details class="panel" id="rgpd" style="margin-top: 24px">
+    <summary>Protection des données personnelles</summary>
+    <h3>Responsable et contact</h3>
+    <p>Responsable du traitement : <span id="rgpdResp">l'établissement</span>. Pour toute question ou demande concernant vos données : <span id="rgpdContact">l'accueil de l'établissement</span>.</p>
+    <h3>Données collectées</h3>
+    <ul>
+      <li>Votre nom, le nombre de repas, le type (interne ou externe) et la date du repas.</li>
+      <li>Votre adresse e-mail et des informations diverses, uniquement si vous les saisissez (facultatif).</li>
+      <li>Un code d'annulation que vous choisissez, conservé sous forme d'empreinte non lisible.</li>
+    </ul>
+    <h3>Pourquoi</h3>
+    <p>Organiser les réservations et le service du restaurant d'application. Aucune autre utilisation, aucune publicité, aucune revente.</p>
+    <h3>Qui y a accès</h3>
+    <p>L'équipe du restaurant (professeurs de service et administrateur). L'hébergement est assuré par des prestataires techniques qui n'utilisent pas ces données pour leur compte.</p>
+    <h3>Durée de conservation</h3>
+    <p>Les réservations sont supprimées automatiquement 30 jours après la date du repas.</p>
+    <h3>Vos droits</h3>
+    <p>Vous pouvez demander l'accès à vos données, leur rectification ou leur effacement, et vous opposer à leur traitement. Vous pouvez aussi annuler vous-même une réservation avec votre nom et votre code, ce qui efface vos données associées. En cas de difficulté, vous pouvez saisir la CNIL (cnil.fr).</p>
+    <h3>Sur votre appareil</h3>
+    <p>Pour afficher vos réservations, la page garde dans votre navigateur votre nom et le nombre de repas, sans code ni e-mail. Le bouton « Effacer de cet appareil » les supprime.</p>
+  </details>
+
+  <footer><a href="#" id="teamLink">Espace équipe</a> · <a href="#rgpd" class="rgpdlink">Protection des données</a></footer>
 </div>
 <div id="toast" role="status" aria-live="polite" hidden></div>
 
@@ -607,6 +633,14 @@ footer { margin-top: 32px; font-size: 13px; color: var(--muted); }
     photo.alt = CFG.photoAlt || 'Photo du restaurant d\'application';
     logo.src = CFG.logo || 'logo.png';
     photo.src = CFG.photo || 'photo.jpg';
+  })();
+  (function () {
+    var cr = CFG.rgpd || {};
+    if (cr.responsable) $('rgpdResp').textContent = cr.responsable;
+    if (cr.contact) $('rgpdContact').textContent = cr.contact;
+    Array.prototype.forEach.call(document.querySelectorAll('.rgpdlink'), function (a) {
+      a.addEventListener('click', function (ev) { ev.preventDefault(); var d = $('rgpd'); d.open = true; d.scrollIntoView({ behavior: 'smooth' }); });
+    });
   })();
   $('qrUrl').value = location.href.split('#')[0].split('?')[0];
   $('qty').addEventListener('input', renderCards);
